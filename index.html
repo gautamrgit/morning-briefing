@@ -3,18 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Morning Briefing</title>
+<title>G's Morning Briefing</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <style>
   :root {
-    --bg: #faf9f6; --text: #1a1a1a; --muted: #6b6b6b;
-    --accent: #b45309; --card: #ffffff; --border: #e7e2d8; --chip: #f0ece3;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #14120f; --text: #e8e5df; --muted: #9a958c;
-      --accent: #f59e0b; --card: #1d1a16; --border: #2e2a24; --chip: #24211c;
-    }
+    --bg: #faf9f6; --text: #1f1f1f; --body: #3d3a35; --muted: #767066;
+    --accent: #b45309; --border: #e7e2d8; --chip: #f0ece3; --headline: #111111;
   }
   * { box-sizing: border-box; }
   body {
@@ -63,8 +57,13 @@
   details.sec summary .chev { transition: transform .2s; color: var(--muted); font-size: 13px; }
   details.sec[open] summary .chev { transform: rotate(90deg); }
   .sec-body { padding: 2px 2px 10px; }
-  .sec-body p { margin: 0 0 18px; }
-  .sec-body em { color: var(--muted); font-size: 15px; }
+  .sec-body p { margin: 0 0 22px; color: var(--body); font-size: 16px; }
+  .sec-body p > strong:first-child {
+    display: block; color: var(--headline);
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 16.5px; line-height: 1.35; margin-bottom: 5px;
+  }
+  .sec-body em { color: var(--muted); font-size: 14px; }
   .sec-body a { color: var(--accent); text-decoration: none; }
   #status { color: var(--muted); font-family: -apple-system, system-ui, sans-serif; font-size: 14px; padding: 40px 0; text-align: center; }
 </style>
@@ -72,7 +71,7 @@
 <body>
 <div class="wrap">
   <header class="site">
-    <h1>&#9728;&#65039; Morning Briefing</h1>
+    <h1>&#9728;&#65039; G's Morning Briefing</h1>
     <div class="meta" id="updated">Gautam's daily read</div>
   </header>
   <div id="status">Loading briefing&#8230;</div>
@@ -84,6 +83,8 @@
 <script>
 (function () {
   const REPO = 'gautamrgit/morning-briefing';
+  // Preferred section order, by leading emoji. Unlisted sections keep file order at the end.
+  const ORDER = ['\u{1F3E2}', '\u{1F3C1}', '\u{1F4C8}', '\u{1F9EC}', '\u{1F3CF}', '\u{1F3BE}', '\u{1F33F}', '\u{1F9D8}'];
 
   fetch('https://api.github.com/repos/' + REPO + '/commits?path=briefing.md&per_page=1')
     .then(r => r.json())
@@ -105,6 +106,13 @@
         'Could not load briefing.md - check that the file exists in the repo.';
     });
 
+  function orderIndex(title) {
+    for (let i = 0; i < ORDER.length; i++) {
+      if (title.startsWith(ORDER[i])) return i;
+    }
+    return 99;
+  }
+
   function build(md) {
     document.getElementById('status').style.display = 'none';
     const tmp = document.createElement('div');
@@ -113,6 +121,7 @@
     const intro = document.getElementById('intro');
     const sections = document.getElementById('sections');
     const chips = document.getElementById('chips');
+    const built = [];
     let current = null;
 
     Array.from(tmp.childNodes).forEach(node => {
@@ -125,14 +134,8 @@
         det.innerHTML = '<summary><span class="chev">&#9654;</span><span class="t"></span>' +
                         '<span class="count"></span></summary><div class="sec-body"></div>';
         det.querySelector('.t').textContent = title;
-        sections.appendChild(det);
+        built.push({ det: det, title: title });
         current = det.querySelector('.sec-body');
-
-        const chip = document.createElement('button');
-        chip.className = 'chip';
-        chip.textContent = title.split(' ').slice(0, 2).join(' ');
-        chip.onclick = () => { det.open = true; det.scrollIntoView({ behavior: 'smooth' }); };
-        chips.appendChild(chip);
       } else if (current) {
         current.appendChild(node.cloneNode(true));
       } else {
@@ -140,6 +143,32 @@
       }
     });
 
+    // Reorder sections to the preferred order
+    built.sort((a, b) => orderIndex(a.title) - orderIndex(b.title));
+    built.forEach(s => {
+      sections.appendChild(s.det);
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = s.title.split(' ').slice(0, 2).join(' ');
+      chip.onclick = () => { s.det.open = true; s.det.scrollIntoView({ behavior: 'smooth' }); };
+      chips.appendChild(chip);
+    });
+
+    // Headline styling cleanup: strip the leading em-dash after each bold headline
+    document.querySelectorAll('.sec-body > p > strong:first-child').forEach(strong => {
+      const next = strong.nextSibling;
+      if (next && next.nodeType === 3) {
+        next.textContent = next.textContent.replace(/^\s*[—–-]\s*/, '');
+      }
+    });
+
+    // Open all links in a new tab
+    document.querySelectorAll('#sections a, #intro a').forEach(a => {
+      a.target = '_blank';
+      a.rel = 'noopener';
+    });
+
+    // Item counts
     document.querySelectorAll('details.sec').forEach(det => {
       const n = det.querySelectorAll('.sec-body > p > strong:first-child').length;
       det.querySelector('.count').textContent = n ? n + (n === 1 ? ' item' : ' items') : '';
