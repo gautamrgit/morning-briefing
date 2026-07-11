@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morning Briefing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #faf9f6; --text: #1a1a1a; --muted: #6b6b6b;
+    --accent: #b45309; --card: #ffffff; --border: #e7e2d8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14120f; --text: #e8e5df; --muted: #9a958c;
+      --accent: #f59e0b; --card: #1d1a16; --border: #2e2a24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.55; font-size: 17px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 28px 20px 80px; }
+  header.site { border-bottom: 2px solid var(--text); padding-bottom: 12px; margin-bottom: 8px; }
+  header.site h1 { font-size: 26px; margin: 0; letter-spacing: 0.5px; }
+  header.site .sub { color: var(--muted); font-size: 14px; font-family: -apple-system, system-ui, sans-serif; }
+  #content h1 { font-size: 22px; margin: 24px 0 4px; }
+  #content h2 {
+    font-size: 20px; margin: 36px 0 12px; padding: 8px 0 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  #content p { margin: 0 0 16px; }
+  #content em { color: var(--muted); font-size: 15px; }
+  #content a { color: var(--accent); text-decoration: none; }
+  #content a:hover { text-decoration: underline; }
+  #content hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  #content strong { font-weight: 700; }
+  #status { color: var(--muted); font-family: -apple-system, system-ui, sans-serif; font-size: 14px; padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>☀️ Morning Briefing</h1>
+    <div class="sub">Gautam's daily read</div>
+  </header>
+  <div id="status">Loading briefing…</div>
+  <div id="content"></div>
+</div>
+<script>
+  fetch('briefing.md', { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(md => {
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('content').innerHTML = marked.parse(md);
+    })
+    .catch(() => {
+      document.getElementById('status').textContent =
+        'Could not load briefing.md — check that the file exists in the repo.';
+    });
+</script>
+</body>
+</html>
